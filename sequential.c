@@ -22,13 +22,57 @@
 #define A_TIMES_B 4
 #define B_TIMES_C 5
 
-double ** setup_matrix_double(double **M, int rows, int cols, int array_type, int input_type, const char *filename){
+void print_matrix_to_file_double(double **M, int rows, int cols, const char *filename){
     FILE *file = fopen(filename, "w");
     if (file == NULL) {
         perror("Failed to open file");
         exit(1);
     }
+    for (int i = 0; i < rows; i++){
+        for (int j = 0; j < cols; j++){
+            fprintf(file, "%lf ", M[i][j]);
+        }
+        fprintf(file, "\n");
+    }
+    fclose(file);
+}
 
+void print_matrix_to_file_float(float **M, int rows, int cols, const char *filename){
+    FILE *file = fopen(filename, "w");
+    if (file == NULL) {
+        perror("Failed to open file");
+        exit(1);
+    }
+    for (int i = 0; i < rows; i++){
+        for (int j = 0; j < cols; j++){
+            fprintf(file, "%lf ", M[i][j]);
+        }
+        fprintf(file, "\n");
+    }
+    fclose(file);
+}
+
+void multiply_matrix_double(double **M_1, double **M_2, double **M_3, int rows, int common_dim, int cols, const char *filename){
+    for (int i = 0; i < rows; i++){
+        for (int j = 0; j < cols; j++){
+            for (int k = 0; k < common_dim; k++){
+                M_3[i][j] += M_1[i][k] * M_2[k][j];
+            }
+        }
+    }
+}
+
+void multiply_matrix_float(float **M_1, float **M_2, float **M_3, int rows, int common_dim, int cols, const char *filename){
+    for (int i = 0; i < rows; i++){
+        for (int j = 0; j < cols; j++){
+            for (int k = 0; k < common_dim; k++){
+                M_3[i][j] += M_1[i][k] * M_2[k][j];
+            }
+        }
+    }
+}
+
+double ** setup_matrix_double(double **M, int rows, int cols, int array_type, int input_type, const char *filename){
     M = (double **)malloc(rows * sizeof(double *));
 
     // allocate memory to columns
@@ -40,31 +84,21 @@ double ** setup_matrix_double(double **M, int rows, int cols, int array_type, in
         for (int i = 0; i < rows; i++){
             for (int j = 0; j < cols; j++){
                 M[i][j] = 0;
-                fprintf(file, "%lf ", M[i][j]);
             }
-            fprintf(file, "\n");
         }  
     } else if (input_type == RANDOM){
         for (int i = 0; i < rows; i++){
             for (int j = 0; j < cols; j++){
-                M[i][j] = rand() % RAND_MAX + 1;
-                fprintf(file, "%lf ", M[i][j]);
+                M[i][j] = (double) rand() / RAND_MAX;
             }
-            fprintf(file, "\n");
         }
     }
+    print_matrix_to_file_double(M, rows, cols, filename);
         
-    fclose(file);
     return M;
 }
 
 float ** setup_matrix_float(float **M, int rows, int cols, int array_type, int input_type, const char *filename){
-    FILE *file = fopen(filename, "w");
-    if (file == NULL) {
-        perror("Failed to open file");
-        exit(1);
-    }
-
     M = (float **)malloc(rows * sizeof(float *));
 
     // allocate memory to columns
@@ -76,21 +110,18 @@ float ** setup_matrix_float(float **M, int rows, int cols, int array_type, int i
         for (int i = 0; i < rows; i++){
             for (int j = 0; j < cols; j++){
                 M[i][j] = 0;
-                fprintf(file, "%lf ", M[i][j]);
             }
-            fprintf(file, "\n");
         }  
     } else if (input_type == RANDOM){
         for (int i = 0; i < rows; i++){
             for (int j = 0; j < cols; j++){
-                M[i][j] = rand() % RAND_MAX + 1;
-                fprintf(file, "%lf ", M[i][j]);
+                M[i][j] = (float) rand() / RAND_MAX;
             }
-            fprintf(file, "\n");
         }
     }
+
+    print_matrix_to_file_float(M, rows, cols, filename);
         
-    fclose(file);
     return M;
 }
 
@@ -193,6 +224,25 @@ int main(int argc, char *argv[]){
         float **D = setup_matrix_float(D, m, n, array_type, ZERO, "D");
         float **T = setup_matrix_float(T, t_rows, t_cols, array_type, ZERO, "T");
 
+
+        struct timeval start, end;
+        gettimeofday(&start, NULL);
+        if (t_type == A_TIMES_B){
+            multiply_matrix_float(A, B, T, m, k, l, "T");
+            multiply_matrix_float(T, C, D, t_rows, t_cols, n, "D");
+        } else if (t_type == B_TIMES_C){
+            multiply_matrix_float(B, C, T, k, l, n, "T");
+            multiply_matrix_float(A, T, D, m, t_rows, t_cols, "D");
+        }
+        gettimeofday(&end, NULL);
+        long seconds = end.tv_sec - start.tv_sec;
+        long microseconds = end.tv_usec - start.tv_usec;
+        double elapsed = seconds + microseconds * 1e-6;
+        printf("Elapsed time: %.6f seconds\n", elapsed);
+
+        print_matrix_to_file_float(T, t_rows, t_cols, "T");
+        print_matrix_to_file_float(D, m, n, "D");
+
         // Free allocated memory
         for (int i = 0; i < m; i++) {
             free(A[i]);
@@ -221,6 +271,24 @@ int main(int argc, char *argv[]){
         double **C = setup_matrix_double(C, l, n, array_type, RANDOM, "C");
         double **D = setup_matrix_double(D, m, n, array_type, ZERO, "D");
         double **T = setup_matrix_double(T, t_rows, t_cols, array_type, ZERO, "T");
+
+        struct timeval start, end;
+        gettimeofday(&start, NULL);
+        if (t_type == A_TIMES_B){
+            multiply_matrix_double(A, B, T, m, k, l, "T");
+            multiply_matrix_double(T, C, D, t_rows, t_cols, n, "D");
+        } else if (t_type == B_TIMES_C){
+            multiply_matrix_double(B, C, T, k, l, n, "T");
+            multiply_matrix_double(A, T, D, m, t_rows, t_cols, "D");
+        }
+        gettimeofday(&end, NULL);
+        long seconds = end.tv_sec - start.tv_sec;
+        long microseconds = end.tv_usec - start.tv_usec;
+        double elapsed = seconds + microseconds * 1e-6;
+        printf("Elapsed time: %.6f seconds\n", elapsed);
+
+        print_matrix_to_file_double(T, t_rows, t_cols, "T");
+        print_matrix_to_file_double(D, m, n, "D");
 
         // Free allocated memory
         for (int i = 0; i < m; i++) {
