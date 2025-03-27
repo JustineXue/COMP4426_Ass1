@@ -16,6 +16,83 @@
 
 #define FLOAT 1
 #define DOUBLE 2
+#define ZERO 0
+#define RANDOM 3
+#define SID 520489042
+#define A_TIMES_B 4
+#define B_TIMES_C 5
+
+double ** setup_matrix_double(double **M, int rows, int cols, int array_type, int input_type, const char *filename){
+    FILE *file = fopen(filename, "w");
+    if (file == NULL) {
+        perror("Failed to open file");
+        exit(1);
+    }
+
+    M = (double **)malloc(rows * sizeof(double *));
+
+    // allocate memory to columns
+    for (int i = 0; i < rows; i++){
+        M[i] = (double *)malloc(cols * sizeof(double));
+    }
+
+    if (input_type == ZERO){
+        for (int i = 0; i < rows; i++){
+            for (int j = 0; j < cols; j++){
+                M[i][j] = 0;
+                fprintf(file, "%lf ", M[i][j]);
+            }
+            fprintf(file, "\n");
+        }  
+    } else if (input_type == RANDOM){
+        for (int i = 0; i < rows; i++){
+            for (int j = 0; j < cols; j++){
+                M[i][j] = rand() % RAND_MAX + 1;
+                fprintf(file, "%lf ", M[i][j]);
+            }
+            fprintf(file, "\n");
+        }
+    }
+        
+    fclose(file);
+    return M;
+}
+
+float ** setup_matrix_float(float **M, int rows, int cols, int array_type, int input_type, const char *filename){
+    FILE *file = fopen(filename, "w");
+    if (file == NULL) {
+        perror("Failed to open file");
+        exit(1);
+    }
+
+    M = (float **)malloc(rows * sizeof(float *));
+
+    // allocate memory to columns
+    for (int i = 0; i < rows; i++){
+        M[i] = (float *)malloc(cols * sizeof(float));
+    }
+
+    if (input_type == ZERO){
+        for (int i = 0; i < rows; i++){
+            for (int j = 0; j < cols; j++){
+                M[i][j] = 0;
+                fprintf(file, "%lf ", M[i][j]);
+            }
+            fprintf(file, "\n");
+        }  
+    } else if (input_type == RANDOM){
+        for (int i = 0; i < rows; i++){
+            for (int j = 0; j < cols; j++){
+                M[i][j] = rand() % RAND_MAX + 1;
+                fprintf(file, "%lf ", M[i][j]);
+            }
+            fprintf(file, "\n");
+        }
+    }
+        
+    fclose(file);
+    return M;
+}
 
 bool is_valid_int(const char *buff) {
     char *end;
@@ -85,21 +162,84 @@ int main(int argc, char *argv[]){
     printf("k is %d\n", k);
     printf("l is %d\n", l);
     printf("n is %d\n", n);
+
+    int t_rows, t_cols;
+    int t_type;
+    //determining optimal T by comparing the number of scalar multiplications which will occur
+    long long first_case = (long long)m*k*l+(long long)m*l*n;
+    long long second_case = (long long)k*l*n+(long long)m*k*n;
+    if (first_case < second_case){
+        // in this case, (A * B) * C is more efficient
+        t_rows = m;
+        t_cols = l;
+        t_type = A_TIMES_B;
+        printf("A TIMES B\n");
+    } else {
+        // otherwise, A * (B * C) is more efficient
+        t_rows = k;
+        t_cols = n;
+        t_type = B_TIMES_C;
+        printf("B times C\n");
+    }
+    srand(SID);
+
     if (array_type == FLOAT){
         printf("type is float\n");
+        printf("num_threads is %d\n", num_threads);
+
+        float **A = setup_matrix_float(A, m, k, array_type, RANDOM, "A");
+        float **B = setup_matrix_float(B, k, l, array_type, RANDOM, "B");
+        float **C = setup_matrix_float(C, l, n, array_type, RANDOM, "C");
+        float **D = setup_matrix_float(D, m, n, array_type, ZERO, "D");
+        float **T = setup_matrix_float(T, t_rows, t_cols, array_type, ZERO, "T");
+
+        // Free allocated memory
+        for (int i = 0; i < m; i++) {
+            free(A[i]);
+            free(D[i]);
+        }
+        for (int i = 0; i < k; i++) {
+            free(B[i]);
+        }
+        for (int i = 0; i < l; i++) {
+            free(C[i]);
+        }
+        for (int i = 0; i < t_rows; i++){
+            free(T[i]);
+        }
+        free(A);
+        free(B);
+        free(C);
+        free(D);
+        free(T);
+
     } else if (array_type == DOUBLE){
         printf("type is double\n");
+        printf("num_threads is %d\n", num_threads);
+        double **A = setup_matrix_double(A, m, k, array_type, RANDOM, "A");
+        double **B = setup_matrix_double(B, k, l, array_type, RANDOM, "B");
+        double **C = setup_matrix_double(C, l, n, array_type, RANDOM, "C");
+        double **D = setup_matrix_double(D, m, n, array_type, ZERO, "D");
+        double **T = setup_matrix_double(T, t_rows, t_cols, array_type, ZERO, "T");
+
+        // Free allocated memory
+        for (int i = 0; i < m; i++) {
+            free(A[i]);
+            free(D[i]);
+        }
+        for (int i = 0; i < k; i++) {
+            free(B[i]);
+        }
+        for (int i = 0; i < l; i++) {
+            free(C[i]);
+        }
+        for (int i = 0; i < t_rows; i++){
+            free(T[i]);
+        }
+        free(A);
+        free(B);
+        free(C);
+        free(D);
+        free(T);
     }
-    printf("num_threads is %d\n", num_threads);
-
-    void **A;
-    void **B;
-    void **C;
-    void **D;
-    void **T;
-    if (array_type == FLOAT){
-    } else if (array_type == DOUBLE){
-
-    }
-
 }
