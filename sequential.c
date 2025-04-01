@@ -53,9 +53,18 @@ void print_matrix_to_file_float(float **M, int rows, int cols, const char *filen
 }
 
 void multiply_matrix_double(double **M_1, double **M_2, double **M_3, int rows, int common_dim, int cols, const char *filename){
+    // standard method
+    // for (int i = 0; i < rows; i++){
+    //     for (int j = 0; j < cols; j++){
+    //         for (int k = 0; k < common_dim; k++){
+    //             M_3[i][j] += M_1[i][k] * M_2[k][j];
+    //         }
+    //     }
+    // }
+    // cache-friendly method
     for (int i = 0; i < rows; i++){
-        for (int j = 0; j < cols; j++){
-            for (int k = 0; k < common_dim; k++){
+        for (int k = 0; k < common_dim; k++){
+            for (int j = 0; j < cols; j++){
                 M_3[i][j] += M_1[i][k] * M_2[k][j];
             }
         }
@@ -63,9 +72,18 @@ void multiply_matrix_double(double **M_1, double **M_2, double **M_3, int rows, 
 }
 
 void multiply_matrix_float(float **M_1, float **M_2, float **M_3, int rows, int common_dim, int cols, const char *filename){
+    // standard method
+    // for (int i = 0; i < rows; i++){
+    //     for (int j = 0; j < cols; j++){
+    //         for (int k = 0; k < common_dim; k++){
+    //             M_3[i][j] += M_1[i][k] * M_2[k][j];
+    //         }
+    //     }
+    // }
+    // cache friendly method
     for (int i = 0; i < rows; i++){
-        for (int j = 0; j < cols; j++){
-            for (int k = 0; k < common_dim; k++){
+        for (int k = 0; k < common_dim; k++){
+            for (int j = 0; j < cols; j++){
                 M_3[i][j] += M_1[i][k] * M_2[k][j];
             }
         }
