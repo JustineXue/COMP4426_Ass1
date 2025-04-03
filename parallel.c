@@ -33,6 +33,7 @@ typedef struct {
     int start_col;
     int end_col;
     int common_dim;
+    int common_dim_limit;
     float **M_1;
     float **M_2;
     float **M_3;
@@ -45,6 +46,7 @@ typedef struct {
     int start_col;
     int end_col;
     int common_dim;
+    int common_dim_limit;
     double **M_1;
     double **M_2;
     double **M_3;
@@ -53,11 +55,53 @@ typedef struct {
 void* multiply_block_float(void* arg) {
     ThreadDataFloat* data = (ThreadDataFloat*)arg;
     printf("Thread %d - Multiply block for start_row: %d end_row: %d\nstart_col: %d end_col: %d\n", data->thread_id, data->start_row, data->end_row, data->start_col, data->end_col);
+    // for (int i = data->start_row; i < data->end_row; i++) {
+    //     for (int j = data->start_col; j < data->end_col; j++) {
+    //         for (int k = 0; k < data->common_dim; k++){
+    //             data->M_3[i][j] += data->M_1[i][k] * data->M_2[k][j];
+    //             // printf("M_3[%d][%d] += %f * %f]\n", i, j, data->M_1[i][k], data->M_2[k][j]);
+    //         }
+    //     }
+    // }
     for (int i = data->start_row; i < data->end_row; i++) {
-        for (int j = data->start_col; j < data->end_col; j++) {
+        for (int j = data->start_col; j < data->end_col; j+=4) {
+            int j_1 = j;
+            int j_2 = j+1;
+            int j_3 = j+2;
+            int j_4 = j+3;
+            // for (int k = 0; k < data->common_dim_limit; k+=4){
+            //     int k_1 = k;
+            //     int k_2 = k+1;
+            //     int k_3 = k+2;
+            //     int k_4 = k+3;
+
+            //     data->M_3[i][j_1] += data->M_1[i][k_1] * data->M_2[k_1][j_1];
+            //     data->M_3[i][j_1] += data->M_1[i][k_2] * data->M_2[k_2][j_1];
+            //     data->M_3[i][j_1] += data->M_1[i][k_3] * data->M_2[k_3][j_1];
+            //     data->M_3[i][j_1] += data->M_1[i][k_4] * data->M_2[k_4][j_1];
+
+            //     data->M_3[i][j_2] += data->M_1[i][k_1] * data->M_2[k_1][j_2];
+            //     data->M_3[i][j_2] += data->M_1[i][k_2] * data->M_2[k_2][j_2];
+            //     data->M_3[i][j_2] += data->M_1[i][k_3] * data->M_2[k_3][j_2];
+            //     data->M_3[i][j_2] += data->M_1[i][k_4] * data->M_2[k_4][j_2];
+
+            //     data->M_3[i][j_3] += data->M_1[i][k_1] * data->M_2[k_1][j_3];
+            //     data->M_3[i][j_3] += data->M_1[i][k_2] * data->M_2[k_2][j_3];
+            //     data->M_3[i][j_3] += data->M_1[i][k_3] * data->M_2[k_3][j_3];
+            //     data->M_3[i][j_3] += data->M_1[i][k_4] * data->M_2[k_4][j_3];
+
+            //     data->M_3[i][j_4] += data->M_1[i][k_1] * data->M_2[k_1][j_4];
+            //     data->M_3[i][j_4] += data->M_1[i][k_2] * data->M_2[k_2][j_4];
+            //     data->M_3[i][j_4] += data->M_1[i][k_3] * data->M_2[k_3][j_4];
+            //     data->M_3[i][j_4] += data->M_1[i][k_4] * data->M_2[k_4][j_4];
+            //     // data->M_3[i][j] += data->M_1[i][k] * data->M_2[k][j];
+            //     // printf("M_3[%d][%d] += %f * %f]\n", i, j, data->M_1[i][k], data->M_2[k][j]);
+            // }
             for (int k = 0; k < data->common_dim; k++){
-                data->M_3[i][j] += data->M_1[i][k] * data->M_2[k][j];
-                // printf("M_3[%d][%d] += %f * %f]\n", i, j, data->M_1[i][k], data->M_2[k][j]);
+                data->M_3[i][j_1] += data->M_1[i][k] * data->M_2[k][j_1];
+                data->M_3[i][j_2] += data->M_1[i][k] * data->M_2[k][j_2];
+                data->M_3[i][j_3] += data->M_1[i][k] * data->M_2[k][j_3];
+                data->M_3[i][j_4] += data->M_1[i][k] * data->M_2[k][j_4];
             }
         }
     }
@@ -68,18 +112,44 @@ void* multiply_block_double(void* arg) {
     ThreadDataDouble* data = (ThreadDataDouble*)arg;
     printf("Thread %d - Multiply block for start_row: %d end_row: %d\nstart_col: %d end_col: %d\n", data->thread_id, data->start_row, data->end_row, data->start_col, data->end_col);
     for (int i = data->start_row; i < data->end_row; i++) {
-        for (int j = data->start_col; j < data->end_col; j++) {
-            for (int k = 0; k < data->common_dim; k+=4){
-                // int k_1 = k;
-                // int k_2 = k+1;
-                // int k_3 = k+2;
-                // int k_4 = k_3;
-                // data->M_3[i][j] += data->M_1[i][k_1] * data->M_2[k_1][j];
-                // data->M_3[i][j] += data->M_1[i][k_2] * data->M_2[k_2][j];
-                // data->M_3[i][j] += data->M_1[i][k_3] * data->M_2[k_3][j];
-                // data->M_3[i][j] += data->M_1[i][k_4] * data->M_2[k_4][j];
-                data->M_3[i][j] += data->M_1[i][k] * data->M_2[k][j];
-                // printf("M_3[%d][%d] += %f * %f]\n", i, j, data->M_1[i][k], data->M_2[k][j]);
+        for (int j = data->start_col; j < data->end_col; j+=4) {
+            int j_1 = j;
+            int j_2 = j+1;
+            int j_3 = j+2;
+            int j_4 = j+3;
+            // for (int k = 0; k < data->common_dim_limit; k+=4){
+            //     int k_1 = k;
+            //     int k_2 = k+1;
+            //     int k_3 = k+2;
+            //     int k_4 = k+3;
+
+            //     data->M_3[i][j_1] += data->M_1[i][k_1] * data->M_2[k_1][j_1];
+            //     data->M_3[i][j_1] += data->M_1[i][k_2] * data->M_2[k_2][j_1];
+            //     data->M_3[i][j_1] += data->M_1[i][k_3] * data->M_2[k_3][j_1];
+            //     data->M_3[i][j_1] += data->M_1[i][k_4] * data->M_2[k_4][j_1];
+
+            //     data->M_3[i][j_2] += data->M_1[i][k_1] * data->M_2[k_1][j_2];
+            //     data->M_3[i][j_2] += data->M_1[i][k_2] * data->M_2[k_2][j_2];
+            //     data->M_3[i][j_2] += data->M_1[i][k_3] * data->M_2[k_3][j_2];
+            //     data->M_3[i][j_2] += data->M_1[i][k_4] * data->M_2[k_4][j_2];
+
+            //     data->M_3[i][j_3] += data->M_1[i][k_1] * data->M_2[k_1][j_3];
+            //     data->M_3[i][j_3] += data->M_1[i][k_2] * data->M_2[k_2][j_3];
+            //     data->M_3[i][j_3] += data->M_1[i][k_3] * data->M_2[k_3][j_3];
+            //     data->M_3[i][j_3] += data->M_1[i][k_4] * data->M_2[k_4][j_3];
+
+            //     data->M_3[i][j_4] += data->M_1[i][k_1] * data->M_2[k_1][j_4];
+            //     data->M_3[i][j_4] += data->M_1[i][k_2] * data->M_2[k_2][j_4];
+            //     data->M_3[i][j_4] += data->M_1[i][k_3] * data->M_2[k_3][j_4];
+            //     data->M_3[i][j_4] += data->M_1[i][k_4] * data->M_2[k_4][j_4];
+            //     // data->M_3[i][j] += data->M_1[i][k] * data->M_2[k][j];
+            //     // printf("M_3[%d][%d] += %f * %f]\n", i, j, data->M_1[i][k], data->M_2[k][j]);
+            // }
+            for (int k = 0; k < data->common_dim; k++){
+                data->M_3[i][j_1] += data->M_1[i][k] * data->M_2[k][j_1];
+                data->M_3[i][j_2] += data->M_1[i][k] * data->M_2[k][j_2];
+                data->M_3[i][j_3] += data->M_1[i][k] * data->M_2[k][j_3];
+                data->M_3[i][j_4] += data->M_1[i][k] * data->M_2[k][j_4];
             }
         }
     }
@@ -124,6 +194,7 @@ void multiply_matrix_double(double **M_1, double **M_2, double **M_3, int rows, 
     int block_rows = floor(rows / block_size);
     int block_cols = floor(cols / block_size);
     int thread_index = 0;
+    int common_dim_limit = floor(common_dim/4);
 
     // struct timeval start, end;
     // gettimeofday(&start, NULL);
@@ -139,6 +210,7 @@ void multiply_matrix_double(double **M_1, double **M_2, double **M_3, int rows, 
             thread_data[thread_index].start_col = j * block_size;
             thread_data[thread_index].end_col = (j + 1) * block_size;
             thread_data[thread_index].common_dim = common_dim;
+            thread_data[thread_index].common_dim_limit = common_dim_limit;
             thread_data[thread_index].M_1 = M_1;
             thread_data[thread_index].M_2 = M_2;
             thread_data[thread_index].M_3 = M_3;
@@ -180,6 +252,7 @@ void multiply_matrix_float(float **M_1, float **M_2, float **M_3, int rows, int 
     int block_rows = floor(rows / block_size);
     int block_cols = floor(cols / block_size);
     int thread_index = 0;
+    int common_dim_limit = floor(common_dim/4);
 
     // struct timeval start, end;
     // gettimeofday(&start, NULL);
@@ -195,6 +268,7 @@ void multiply_matrix_float(float **M_1, float **M_2, float **M_3, int rows, int 
             thread_data[thread_index].start_col = j * block_size;
             thread_data[thread_index].end_col = (j + 1) * block_size;
             thread_data[thread_index].common_dim = common_dim;
+            thread_data[thread_index].common_dim_limit = common_dim_limit;
             thread_data[thread_index].M_1 = M_1;
             thread_data[thread_index].M_2 = M_2;
             thread_data[thread_index].M_3 = M_3;
