@@ -15,6 +15,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <math.h>
+#include <sys/stat.h>
 
 #define FLOAT 1
 #define DOUBLE 2
@@ -50,6 +51,74 @@ typedef struct {
     double **M_2;
     double **M_3;
 } ThreadDataDouble;
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <string.h>
+
+void compare_files(const char *filename_1, const char *filename_2) {
+    FILE *file_1 = fopen(filename_1, "r");
+    if (file_1 == NULL) {
+        perror("Failed to open file 1");
+        exit(EXIT_FAILURE);
+    }
+
+    FILE *file_2 = fopen(filename_2, "r");
+    if (file_2 == NULL) {
+        perror("Failed to open file 2");
+        fclose(file_1);
+        exit(EXIT_FAILURE);
+    }
+
+    struct stat st_1, st_2;
+    if (stat(filename_1, &st_1) != 0) {
+        perror("stat");
+        fclose(file_1);
+        fclose(file_2);
+        exit(EXIT_FAILURE);
+    }
+
+    if (stat(filename_2, &st_2) != 0) {
+        perror("stat");
+        fclose(file_1);
+        fclose(file_2);
+        exit(EXIT_FAILURE);
+    }
+
+    if (st_1.st_size != st_2.st_size) {
+        printf("Files are not identical (different sizes)\n");
+        fclose(file_1);
+        fclose(file_2);
+        return;
+    }
+
+    char *buffer_1 = (char *)malloc(st_1.st_size);
+    char *buffer_2 = (char *)malloc(st_2.st_size);
+
+    if (buffer_1 == NULL || buffer_2 == NULL) {
+        perror("Failed to allocate memory");
+        fclose(file_1);
+        fclose(file_2);
+        free(buffer_1);
+        free(buffer_2);
+        exit(EXIT_FAILURE);
+    }
+
+    fread(buffer_1, 1, st_1.st_size, file_1);
+    fread(buffer_2, 1, st_2.st_size, file_2);
+
+    if (memcmp(buffer_1, buffer_2, st_1.st_size) != 0) {
+        printf("Files are not identical\n");
+    } else {
+        printf("Files are identical\n");
+    }
+
+    fclose(file_1);
+    fclose(file_2);
+    free(buffer_1);
+    free(buffer_2);
+}
 
 void multiply_matrix_double_seq(double **M_1, double **M_2, double **M_3, int rows, int common_dim, int cols){
     for (int i = 0; i < rows; i++){
@@ -513,6 +582,8 @@ int main(int argc, char *argv[]){
         print_matrix_to_file_float(T_par, t_rows, t_cols, "T_par");
         print_matrix_to_file_float(D_par, m, n, "D_par");
 
+        compare_files("D_seq", "D_par");
+
         double speedup = elapsed_seq - elapsed_par;
         printf("Speedup: %.6f seconds\n", speedup);
 
@@ -602,6 +673,8 @@ int main(int argc, char *argv[]){
 
         print_matrix_to_file_double(T_par, t_rows, t_cols, "T_par");
         print_matrix_to_file_double(D_par, m, n, "D_par");
+
+        compare_files("D_seq", "D_par");
 
         double speedup = elapsed_seq - elapsed_par;
         printf("Speedup: %.6f seconds\n", speedup);
