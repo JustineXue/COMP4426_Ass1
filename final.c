@@ -24,7 +24,7 @@
 #define SID 520489042
 #define A_TIMES_B 4
 #define B_TIMES_C 5
-#define L1_CACHE 64
+#define L1_CACHE 65536
 
 typedef struct {
     int thread_id;
@@ -477,9 +477,10 @@ int main(int argc, char *argv[]){
     }
     srand(SID);
 
-    int blockSize = floor(sqrt(L1_CACHE/3));
-
     if (array_type == FLOAT){
+
+        int tempBlockSize = floor(sqrt(L1_CACHE/3 * sizeof(float)));
+        int blockSize = floor(tempBlockSize/4) * 4;
 
         float **A = setup_matrix_float(A, m, k, array_type, RANDOM, "A");
         float **B = setup_matrix_float(B, k, l, array_type, RANDOM, "B");
@@ -555,6 +556,10 @@ int main(int argc, char *argv[]){
         free(T_par);
 
     } else if (array_type == DOUBLE){
+
+        int tempBlockSize = floor(sqrt(L1_CACHE/3 * sizeof(double)));
+        int blockSize = floor(tempBlockSize/4) * 4;
+
         double **A = setup_matrix_double(A, m, k, array_type, RANDOM, "A");
         double **B = setup_matrix_double(B, k, l, array_type, RANDOM, "B");
         double **C = setup_matrix_double(C, l, n, array_type, RANDOM, "C");
