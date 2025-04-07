@@ -479,7 +479,7 @@ int main(int argc, char *argv[]){
 
     if (array_type == FLOAT){
 
-        int tempBlockSize = floor(sqrt(L1_CACHE/3 * sizeof(float)));
+        int tempBlockSize = floor(sqrt(L1_CACHE/(3 * sizeof(float))));
         int blockSize = floor(tempBlockSize/4) * 4;
 
         float **A = setup_matrix_float(A, m, k, array_type, RANDOM, "A");
@@ -557,7 +557,7 @@ int main(int argc, char *argv[]){
 
     } else if (array_type == DOUBLE){
 
-        int tempBlockSize = floor(sqrt(L1_CACHE/3 * sizeof(double)));
+        int tempBlockSize = floor(sqrt(L1_CACHE/(3 * sizeof(double))));
         int blockSize = floor(tempBlockSize/4) * 4;
 
         double **A = setup_matrix_double(A, m, k, array_type, RANDOM, "A");
