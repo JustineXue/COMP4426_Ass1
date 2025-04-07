@@ -371,11 +371,20 @@ void multiply_matrix_double_par(double **M_1, double **M_2, double **M_3, int ro
     int thread_index = 0;
     int common_dim_limit = floor(common_dim/4) * 4;
 
+    bool firstIteration = true;
+
 
     for (int i = 0; i < block_rows; i++) {
         for (int j = 0; j < block_cols; j++) {
             if (thread_index == num_threads){
+                if (firstIteration){
+                    firstIteration = false;
+                }
                 thread_index = 0;
+            }
+            if (!firstIteration){
+                //waiting for it to join before continuing
+                pthread_join(threads[thread_index], NULL);
             }
             thread_data[thread_index].thread_id = thread_index;
             thread_data[thread_index].start_row = i * block_size;
@@ -388,15 +397,15 @@ void multiply_matrix_double_par(double **M_1, double **M_2, double **M_3, int ro
             thread_data[thread_index].M_2 = M_2;
             thread_data[thread_index].M_3 = M_3;
             pthread_create(&threads[thread_index], NULL, multiply_block_double_par, &thread_data[thread_index]);
-            pthread_join(threads[thread_index], NULL);
+            // pthread_join(threads[thread_index], NULL);
             thread_index++;
         }
     }
 
-    // // Wait for all threads to complete
-    // for (int i = 0; i < thread_index; i++) {
-    //     pthread_join(threads[i], NULL);
-    // }
+    // Wait for all threads to complete
+    for (int i = 0; i < thread_index; i++) {
+        pthread_join(threads[i], NULL);
+    }
 
     // Process the leftover rows and columns
     for (int i = block_rows * block_size; i < rows; i++) {
@@ -425,10 +434,18 @@ void multiply_matrix_float_par(float **M_1, float **M_2, float **M_3, int rows, 
     int thread_index = 0;
     int common_dim_limit = floor(common_dim/4) * 4;
 
+    bool firstIteration = true;
+
     for (int i = 0; i < block_rows; i++) {
         for (int j = 0; j < block_cols; j++) {
             if (thread_index == num_threads){
+                if (firstIteration){
+                    firstIteration = false;
+                }
                 thread_index = 0;
+            }
+            if (!firstIteration){
+                pthread_join(threads[thread_index], NULL);
             }
             thread_data[thread_index].thread_id = thread_index;
             thread_data[thread_index].start_row = i * block_size;
@@ -441,15 +458,15 @@ void multiply_matrix_float_par(float **M_1, float **M_2, float **M_3, int rows, 
             thread_data[thread_index].M_2 = M_2;
             thread_data[thread_index].M_3 = M_3;
             pthread_create(&threads[thread_index], NULL, multiply_block_float_par, &thread_data[thread_index]);
-            pthread_join(threads[thread_index], NULL);
+            // pthread_join(threads[thread_index], NULL);
             thread_index++;
         }
     }
 
-    // // Wait for all worker threads to complete
-    // for (int i = 0; i < thread_index; i++) {
-    //     pthread_join(threads[i], NULL);
-    // }
+    // Wait for all worker threads to complete
+    for (int i = 0; i < thread_index; i++) {
+        pthread_join(threads[i], NULL);
+    }
 
     // Process the leftover rows and columns
     for (int i = block_rows * block_size; i < rows; i++) {
