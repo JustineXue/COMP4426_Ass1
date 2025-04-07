@@ -52,7 +52,15 @@ typedef struct {
     double **M_3;
 } ThreadDataDouble;
 
-void compare_files(const char *filename_1, const char *filename_2) {
+void write_double(){
+
+}
+
+void write_float(){
+    
+}
+
+void compare_files_double(const char *filename_1, const char *filename_2) {
     FILE *file_1 = fopen(filename_1, "r");
     if (file_1 == NULL) {
         perror("Failed to open file 1");
@@ -82,7 +90,7 @@ void compare_files(const char *filename_1, const char *filename_2) {
     }
 
     if (st_1.st_size != st_2.st_size) {
-        printf("Files are not identical (different sizes)\n");
+        printf("Files are not identical (different sizes) File size of sequential is %lld, file size of parallel is %lld\n", st_1.st_size, st_2.st_size);
         fclose(file_1);
         fclose(file_2);
         return;
@@ -103,10 +111,101 @@ void compare_files(const char *filename_1, const char *filename_2) {
     fread(buffer_1, 1, st_1.st_size, file_1);
     fread(buffer_2, 1, st_2.st_size, file_2);
 
-    if (memcmp(buffer_1, buffer_2, st_1.st_size) != 0) {
-        printf("Files are not identical\n");
-    } else {
+    bool identical = true;
+
+    double epsilon = 1.0E-10;
+
+    for (size_t i = 0; i< st_1.st_size / sizeof(double); i++){
+        float val_1 = ((double *)buffer_1)[i];
+        float val_2 = ((double *)buffer_2)[i];
+        if (fabs(val_1 - val_2) > epsilon){
+            identical = false;
+            printf("Files are not identical at element %zu\n", i);
+            break;
+        }
+    }
+
+    if (identical){
         printf("Files are identical\n");
+    } else {
+        printf("Files are not identical\n");
+    }
+
+    fclose(file_1);
+    fclose(file_2);
+    free(buffer_1);
+    free(buffer_2);
+}
+
+void compare_files_float(const char *filename_1, const char *filename_2) {
+    printf("Testing\n");
+    FILE *file_1 = fopen(filename_1, "r");
+    if (file_1 == NULL) {
+        perror("Failed to open file 1");
+        exit(EXIT_FAILURE);
+    }
+
+    FILE *file_2 = fopen(filename_2, "r");
+    if (file_2 == NULL) {
+        perror("Failed to open file 2");
+        fclose(file_1);
+        exit(EXIT_FAILURE);
+    }
+
+    struct stat st_1, st_2;
+    if (stat(filename_1, &st_1) != 0) {
+        perror("stat");
+        fclose(file_1);
+        fclose(file_2);
+        exit(EXIT_FAILURE);
+    }
+
+    if (stat(filename_2, &st_2) != 0) {
+        perror("stat");
+        fclose(file_1);
+        fclose(file_2);
+        exit(EXIT_FAILURE);
+    }
+
+    if (st_1.st_size != st_2.st_size) {
+        printf("Files are not identical (different sizes) File size of sequential is %lld, file size of parallel is %lld\n", st_1.st_size, st_2.st_size);
+        fclose(file_1);
+        fclose(file_2);
+        return;
+    }
+
+    char *buffer_1 = (char *)malloc(st_1.st_size);
+    char *buffer_2 = (char *)malloc(st_2.st_size);
+
+    if (buffer_1 == NULL || buffer_2 == NULL) {
+        perror("Failed to allocate memory");
+        fclose(file_1);
+        fclose(file_2);
+        free(buffer_1);
+        free(buffer_2);
+        exit(EXIT_FAILURE);
+    }
+
+    fread(buffer_1, 1, st_1.st_size, file_1);
+    fread(buffer_2, 1, st_2.st_size, file_2);
+
+    bool identical = true;
+    float epsilon = 1.0E-7;
+
+    for (size_t i = 0; i< st_1.st_size / sizeof(float); i++){
+        float val_1 = ((float *)buffer_1)[i];
+        float val_2 = ((float *)buffer_2)[i];
+        if (fabs(val_1 - val_2) > epsilon){
+            identical = false;
+            printf("Files are not identical at element %zu\n", i);
+            break;
+        }
+    }
+
+    if (identical == true){
+        printf("Files are identical\n");
+    } else {
+        printf("Files are not identical\n");
     }
 
     fclose(file_1);
@@ -139,33 +238,44 @@ void* multiply_block_float_par(void* arg) {
     ThreadDataFloat* data = (ThreadDataFloat*)arg;
     for (int i = data->start_row; i < data->end_row; i++) {
         for (int j = data->start_col; j < data->end_col; j+=4) {
+            // for (int k = 0; k < data->common_dim; k++){
+            //     data->M_3[i][j] += data->M_1[i][k] * data->M_2[k][j];
+            // }
+            float sum0 = 0.0f, sum1 = 0.0f, sum2 = 0.0f, sum3 = 0.0f;
             for (int k = 0; k < data->common_dim_limit; k+=4){
-                data->M_3[i][j] += data->M_1[i][k] * data->M_2[k][j];
-                data->M_3[i][j] += data->M_1[i][k+1] * data->M_2[k+1][j];
-                data->M_3[i][j] += data->M_1[i][k+2] * data->M_2[k+2][j];
-                data->M_3[i][j] += data->M_1[i][k+3] * data->M_2[k+3][j];
+                sum0 += data->M_1[i][k] * data->M_2[k][j] +
+                        data->M_1[i][k+1] * data->M_2[k+1][j] +
+                        data->M_1[i][k+2] * data->M_2[k+2][j] +
+                        data->M_1[i][k+3] * data->M_2[k+3][j];
 
-                data->M_3[i][j+1] += data->M_1[i][k] * data->M_2[k][j+1];
-                data->M_3[i][j+1] += data->M_1[i][k+1] * data->M_2[k+1][j+1];
-                data->M_3[i][j+1] += data->M_1[i][k+2] * data->M_2[k+2][j+1];
-                data->M_3[i][j+1] += data->M_1[i][k+3] * data->M_2[k+3][j+1];
+                sum1 += data->M_1[i][k] * data->M_2[k][j+1] +
+                       data->M_1[i][k+1] * data->M_2[k+1][j+1] +
+                       data->M_1[i][k+2] * data->M_2[k+2][j+1] +
+                       data->M_1[i][k+3] * data->M_2[k+3][j+1];
 
-                data->M_3[i][j+2] += data->M_1[i][k] * data->M_2[k][j+2];
-                data->M_3[i][j+2] += data->M_1[i][k+1] * data->M_2[k+1][j+2];
-                data->M_3[i][j+2] += data->M_1[i][k+2] * data->M_2[k+2][j+2];
-                data->M_3[i][j+2] += data->M_1[i][k+3] * data->M_2[k+3][j+2];
+                sum2 += data->M_1[i][k] * data->M_2[k][j+2] +
+                       data->M_1[i][k+1] * data->M_2[k+1][j+2] +
+                       data->M_1[i][k+2] * data->M_2[k+2][j+2] +
+                       data->M_1[i][k+3] * data->M_2[k+3][j+2];
 
-                data->M_3[i][j+3] += data->M_1[i][k] * data->M_2[k][j+3];
-                data->M_3[i][j+3] += data->M_1[i][k+1] * data->M_2[k+1][j+3];
-                data->M_3[i][j+3] += data->M_1[i][k+2] * data->M_2[k+2][j+3];
-                data->M_3[i][j+3] += data->M_1[i][k+3] * data->M_2[k+3][j+3];
+                sum3 += data->M_1[i][k] * data->M_2[k][j+3] +
+                       data->M_1[i][k+1] * data->M_2[k+1][j+3] +
+                       data->M_1[i][k+2] * data->M_2[k+2][j+3] +
+                       data->M_1[i][k+3] * data->M_2[k+3][j+3];
             }
-            for (int k = data->common_dim_limit; k < data->common_dim; k++){
-                data->M_3[i][j] += data->M_1[i][k] * data->M_2[k][j];
-                data->M_3[i][j+1] += data->M_1[i][k] * data->M_2[k][j+1];
-                data->M_3[i][j+2] += data->M_1[i][k] * data->M_2[k][j+2];
-                data->M_3[i][j+3] += data->M_1[i][k] * data->M_2[k][j+3];
+
+            // Handle remaining k iterations
+            for (int k = data->common_dim_limit; k < data->common_dim; k++) {
+                sum0 += data->M_1[i][k] * data->M_2[k][j];
+                sum1 += data->M_1[i][k] * data->M_2[k][j+1];
+                sum2 += data->M_1[i][k] * data->M_2[k][j+2];
+                sum3 += data->M_1[i][k] * data->M_2[k][j+3];
             }
+
+            data->M_3[i][j] = sum0;
+            data->M_3[i][j+1] = sum1;
+            data->M_3[i][j+2] = sum2;
+            data->M_3[i][j+3] = sum3;
         }
     }
     return NULL;
@@ -175,33 +285,44 @@ void* multiply_block_double_par(void* arg) {
     ThreadDataDouble* data = (ThreadDataDouble*)arg;
     for (int i = data->start_row; i < data->end_row; i++) {
         for (int j = data->start_col; j < data->end_col; j+=4) {
+            // for (int k = 0; k < data->common_dim; k++){
+            //     data->M_3[i][j] += data->M_1[i][k] * data->M_2[k][j];
+            // }
+            double sum0 = 0.0, sum1 = 0.0, sum2 = 0.0, sum3 = 0.0;
             for (int k = 0; k < data->common_dim_limit; k+=4){
-                data->M_3[i][j] += data->M_1[i][k] * data->M_2[k][j];
-                data->M_3[i][j] += data->M_1[i][k+1] * data->M_2[k+1][j];
-                data->M_3[i][j] += data->M_1[i][k+2] * data->M_2[k+2][j];
-                data->M_3[i][j] += data->M_1[i][k+3] * data->M_2[k+3][j];
+                sum0 += data->M_1[i][k] * data->M_2[k][j] +
+                        data->M_1[i][k+1] * data->M_2[k+1][j] +
+                        data->M_1[i][k+2] * data->M_2[k+2][j] +
+                        data->M_1[i][k+3] * data->M_2[k+3][j];
 
-                data->M_3[i][j+1] += data->M_1[i][k] * data->M_2[k][j+1];
-                data->M_3[i][j+1] += data->M_1[i][k+1] * data->M_2[k+1][j+1];
-                data->M_3[i][j+1] += data->M_1[i][k+2] * data->M_2[k+2][j+1];
-                data->M_3[i][j+1] += data->M_1[i][k+3] * data->M_2[k+3][j+1];
+                sum1 += data->M_1[i][k] * data->M_2[k][j+1] +
+                       data->M_1[i][k+1] * data->M_2[k+1][j+1] +
+                       data->M_1[i][k+2] * data->M_2[k+2][j+1] +
+                       data->M_1[i][k+3] * data->M_2[k+3][j+1];
 
-                data->M_3[i][j+2] += data->M_1[i][k] * data->M_2[k][j+2];
-                data->M_3[i][j+2] += data->M_1[i][k+1] * data->M_2[k+1][j+2];
-                data->M_3[i][j+2] += data->M_1[i][k+2] * data->M_2[k+2][j+2];
-                data->M_3[i][j+2] += data->M_1[i][k+3] * data->M_2[k+3][j+2];
+                sum2 += data->M_1[i][k] * data->M_2[k][j+2] +
+                       data->M_1[i][k+1] * data->M_2[k+1][j+2] +
+                       data->M_1[i][k+2] * data->M_2[k+2][j+2] +
+                       data->M_1[i][k+3] * data->M_2[k+3][j+2];
 
-                data->M_3[i][j+3] += data->M_1[i][k] * data->M_2[k][j+3];
-                data->M_3[i][j+3] += data->M_1[i][k+1] * data->M_2[k+1][j+3];
-                data->M_3[i][j+3] += data->M_1[i][k+2] * data->M_2[k+2][j+3];
-                data->M_3[i][j+3] += data->M_1[i][k+3] * data->M_2[k+3][j+3];
+                sum3 += data->M_1[i][k] * data->M_2[k][j+3] +
+                       data->M_1[i][k+1] * data->M_2[k+1][j+3] +
+                       data->M_1[i][k+2] * data->M_2[k+2][j+3] +
+                       data->M_1[i][k+3] * data->M_2[k+3][j+3];
             }
-            for (int k = data->common_dim_limit; k < data->common_dim; k++){
-                data->M_3[i][j] += data->M_1[i][k] * data->M_2[k][j];
-                data->M_3[i][j+1] += data->M_1[i][k] * data->M_2[k][j+1];
-                data->M_3[i][j+2] += data->M_1[i][k] * data->M_2[k][j+2];
-                data->M_3[i][j+3] += data->M_1[i][k] * data->M_2[k][j+3];
+
+            // Handle remaining k iterations
+            for (int k = data->common_dim_limit; k < data->common_dim; k++) {
+                sum0 += data->M_1[i][k] * data->M_2[k][j];
+                sum1 += data->M_1[i][k] * data->M_2[k][j+1];
+                sum2 += data->M_1[i][k] * data->M_2[k][j+2];
+                sum3 += data->M_1[i][k] * data->M_2[k][j+3];
             }
+
+            data->M_3[i][j] = sum0;
+            data->M_3[i][j+1] = sum1;
+            data->M_3[i][j+2] = sum2;
+            data->M_3[i][j+3] = sum3;
         }
     }
     return NULL;
@@ -209,6 +330,7 @@ void* multiply_block_double_par(void* arg) {
 
 
 void print_matrix_to_file_double(double **M, int rows, int cols, const char *filename){
+    printf("Printing matrix of dimensions %d x %d to file %s\n", rows, cols, filename);
     FILE *file = fopen(filename, "w");
     if (file == NULL) {
         perror("Failed to open file");
@@ -216,7 +338,7 @@ void print_matrix_to_file_double(double **M, int rows, int cols, const char *fil
     }
     for (int i = 0; i < rows; i++){
         for (int j = 0; j < cols; j++){
-            fprintf(file, "%lf ", M[i][j]);
+            fprintf(file, "%.12lf ", M[i][j]);
         }
         fprintf(file, "\n");
     }
@@ -224,6 +346,7 @@ void print_matrix_to_file_double(double **M, int rows, int cols, const char *fil
 }
 
 void print_matrix_to_file_float(float **M, int rows, int cols, const char *filename){
+    printf("Printing matrix of dimensions %d x %d to file %s\n", rows, cols, filename);
     FILE *file = fopen(filename, "w");
     if (file == NULL) {
         perror("Failed to open file");
@@ -231,7 +354,7 @@ void print_matrix_to_file_float(float **M, int rows, int cols, const char *filen
     }
     for (int i = 0; i < rows; i++){
         for (int j = 0; j < cols; j++){
-            fprintf(file, "%lf ", M[i][j]);
+            fprintf(file, "%.6f ", M[i][j]);
         }
         fprintf(file, "\n");
     }
@@ -265,13 +388,15 @@ void multiply_matrix_double_par(double **M_1, double **M_2, double **M_3, int ro
             thread_data[thread_index].M_2 = M_2;
             thread_data[thread_index].M_3 = M_3;
             pthread_create(&threads[thread_index], NULL, multiply_block_double_par, &thread_data[thread_index]);
+            pthread_join(threads[thread_index], NULL);
             thread_index++;
         }
     }
 
-    for (int i = 0; i < thread_index; i++) {
-        pthread_join(threads[i], NULL);
-    }
+    // // Wait for all threads to complete
+    // for (int i = 0; i < thread_index; i++) {
+    //     pthread_join(threads[i], NULL);
+    // }
 
     // Process the leftover rows and columns
     for (int i = block_rows * block_size; i < rows; i++) {
@@ -316,14 +441,15 @@ void multiply_matrix_float_par(float **M_1, float **M_2, float **M_3, int rows, 
             thread_data[thread_index].M_2 = M_2;
             thread_data[thread_index].M_3 = M_3;
             pthread_create(&threads[thread_index], NULL, multiply_block_float_par, &thread_data[thread_index]);
+            pthread_join(threads[thread_index], NULL);
             thread_index++;
         }
     }
 
-    // Wait for all worker threads to complete
-    for (int i = 0; i < thread_index; i++) {
-        pthread_join(threads[i], NULL);
-    }
+    // // Wait for all worker threads to complete
+    // for (int i = 0; i < thread_index; i++) {
+    //     pthread_join(threads[i], NULL);
+    // }
 
     // Process the leftover rows and columns
     for (int i = block_rows * block_size; i < rows; i++) {
@@ -353,7 +479,7 @@ double ** setup_matrix_double(double **M, int rows, int cols, int array_type, in
     if (input_type == ZERO){
         for (int i = 0; i < rows; i++){
             for (int j = 0; j < cols; j++){
-                M[i][j] = 0;
+                M[i][j] = 0.0;
             }
         }  
     } else if (input_type == RANDOM){
@@ -379,7 +505,7 @@ float ** setup_matrix_float(float **M, int rows, int cols, int array_type, int i
     if (input_type == ZERO){
         for (int i = 0; i < rows; i++){
             for (int j = 0; j < cols; j++){
-                M[i][j] = 0;
+                M[i][j] = 0.0f;
             }
         }  
     } else if (input_type == RANDOM){
@@ -505,6 +631,7 @@ int main(int argc, char *argv[]){
         double elapsed_seq = seconds_seq + microseconds_seq * 1e-6;
         printf("Sequential Elapsed time: %.6f seconds\n", elapsed_seq);
 
+        printf("Printing sequential matrices to file\n");
         print_matrix_to_file_float(T_seq, t_rows, t_cols, "T_seq");
         print_matrix_to_file_float(D_seq, m, n, "D_seq");
 
@@ -523,10 +650,25 @@ int main(int argc, char *argv[]){
         double elapsed_par = seconds_par + microseconds_par * 1e-6;
         printf("Parallel Elapsed time: %.6f seconds\n", elapsed_par);
 
+        printf("Printing parallel matrices to file\n");
+        printf("T_par\n");
         print_matrix_to_file_float(T_par, t_rows, t_cols, "T_par");
+        printf("D_par\n");
         print_matrix_to_file_float(D_par, m, n, "D_par");
 
-        compare_files("D_seq", "D_par");
+        float epsilon = 1.0E-7;
+        for (int i = 0; i < m; i++){
+            for (int j = 0; j < n; j++){
+                if (fabs(D_par[i][j] - D_seq[i][j]) > epsilon){
+                    printf("Errored on index [%d][%d]\n", i, j);
+                }
+            }
+        }
+
+        // printf("Comparing T\n");
+        // compare_files_float("T_seq", "T_par");
+        // printf("Comparing D\n");
+        // compare_files_float("D_seq", "D_par");
 
         double speedup = elapsed_seq - elapsed_par;
         printf("Speedup: %.6f seconds\n", speedup);
@@ -583,6 +725,7 @@ int main(int argc, char *argv[]){
         double elapsed_seq = seconds_seq + microseconds_seq * 1e-6;
         printf("Sequential Elapsed time: %.6f seconds\n", elapsed_seq);
 
+        printf("Printing sequential matrices to file\n");
         print_matrix_to_file_double(T_seq, t_rows, t_cols, "T_seq");
         print_matrix_to_file_double(D_seq, m, n, "D_seq");
 
@@ -601,10 +744,24 @@ int main(int argc, char *argv[]){
         double elapsed_par = seconds_par + microseconds_par * 1e-6;
         printf("Parallel Elapsed time: %.6f seconds\n", elapsed_par);
 
+        printf("Printing parallel matrices to file\n");
+        printf("T_par\n");
         print_matrix_to_file_double(T_par, t_rows, t_cols, "T_par");
+        printf("D_par\n");
         print_matrix_to_file_double(D_par, m, n, "D_par");
 
-        compare_files("D_seq", "D_par");
+        double epsilon = 1.0E-10;
+        for (int i = 0; i < m; i++){
+            for (int j = 0; j < n; j++){
+                if (fabs(D_par[i][j] - D_seq[i][j]) > epsilon){
+                    printf("Errored on index [%d][%d]\n", i, j);
+                }
+            }
+        }
+        // printf("Comparing T\n");
+        // compare_files_double("T_seq", "T_par");
+        // printf("Comparing D\n");
+        // compare_files_double("D_seq", "D_par");
 
         double speedup = elapsed_seq - elapsed_par;
         printf("Speedup: %.6f seconds\n", speedup);
