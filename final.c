@@ -371,6 +371,7 @@ bool is_valid_int(const char *buff) {
 }
 
 int main(int argc, char *argv[]){
+    //Checking if inputs are valid
     if (argc != 7) {
         printf("Usage: %s <m> <k> <l> <n> <type> <num_threads>\n", argv[0]);
         return 1;
@@ -411,6 +412,8 @@ int main(int argc, char *argv[]){
         }
     }
 
+    printf("Inputs have been validated. Commencing initialisation of matrices\n");
+
     int t_rows, t_cols;
     int t_type;
     //determining optimal T by comparing the number of scalar multiplications which will occur
@@ -421,11 +424,13 @@ int main(int argc, char *argv[]){
         t_rows = m;
         t_cols = l;
         t_type = A_TIMES_B;
+        printf("Selected T = (A x B)\n");
     } else {
         // otherwise, A * (B * C) is more efficient
         t_rows = k;
         t_cols = n;
         t_type = B_TIMES_C;
+        printf("Selected T = (B x C)\n");
     }
     srand(SID);
 
@@ -433,7 +438,8 @@ int main(int argc, char *argv[]){
 
         int tempBlockSize = floor(sqrt(L1_CACHE/(3 * sizeof(float))));
         int blockSize = floor(tempBlockSize/4) * 4;
-
+        
+        printf("Initialising matrices\n");
         float **A = setup_matrix_float(A, m, k, array_type, RANDOM, "A");
         float **B = setup_matrix_float(B, k, l, array_type, RANDOM, "B");
         float **C = setup_matrix_float(C, l, n, array_type, RANDOM, "C");
@@ -442,6 +448,7 @@ int main(int argc, char *argv[]){
         float **D_par = setup_matrix_float(D_par, m, n, array_type, ZERO, "D_par");
         float **T_par = setup_matrix_float(T_par, t_rows, t_cols, array_type, ZERO, "T_par");
 
+        printf("Executing sequential multiplication\n");
         struct timeval start_seq, end_seq;
         gettimeofday(&start_seq, NULL);
         if (t_type == A_TIMES_B){
@@ -461,6 +468,7 @@ int main(int argc, char *argv[]){
         print_matrix_to_file_float(T_seq, t_rows, t_cols, "T_seq");
         print_matrix_to_file_float(D_seq, m, n, "D_seq");
 
+        printf("Executing parallel multiplication\n");
         struct timeval start_par, end_par;
         gettimeofday(&start_par, NULL);
         if (t_type == A_TIMES_B){
@@ -477,9 +485,7 @@ int main(int argc, char *argv[]){
         printf("Parallel Elapsed time: %.6f seconds\n", elapsed_par);
 
         printf("Printing parallel matrices to file\n");
-        printf("T_par\n");
         print_matrix_to_file_float(T_par, t_rows, t_cols, "T_par");
-        printf("D_par\n");
         print_matrix_to_file_float(D_par, m, n, "D_par");
 
         compare_matrices_float(D_seq, D_par, m, n);
@@ -516,6 +522,7 @@ int main(int argc, char *argv[]){
         int tempBlockSize = floor(sqrt(L1_CACHE/(3 * sizeof(double))));
         int blockSize = floor(tempBlockSize/4) * 4;
 
+        printf("Initialising matrices\n");
         double **A = setup_matrix_double(A, m, k, array_type, RANDOM, "A");
         double **B = setup_matrix_double(B, k, l, array_type, RANDOM, "B");
         double **C = setup_matrix_double(C, l, n, array_type, RANDOM, "C");
@@ -524,6 +531,7 @@ int main(int argc, char *argv[]){
         double **D_par = setup_matrix_double(D_par, m, n, array_type, ZERO, "D_par");
         double **T_par = setup_matrix_double(T_par, t_rows, t_cols, array_type, ZERO, "T_par");
 
+        printf("Executing sequential multiplication\n");
         struct timeval start_seq, end_seq;
         gettimeofday(&start_seq, NULL);
         if (t_type == A_TIMES_B){
@@ -543,6 +551,7 @@ int main(int argc, char *argv[]){
         print_matrix_to_file_double(T_seq, t_rows, t_cols, "T_seq");
         print_matrix_to_file_double(D_seq, m, n, "D_seq");
 
+        printf("Executing parallel multiplication\n");
         struct timeval start_par, end_par;
         gettimeofday(&start_par, NULL);
         if (t_type == A_TIMES_B){
@@ -559,9 +568,7 @@ int main(int argc, char *argv[]){
         printf("Parallel Elapsed time: %.6f seconds\n", elapsed_par);
 
         printf("Printing parallel matrices to file\n");
-        printf("T_par\n");
         print_matrix_to_file_double(T_par, t_rows, t_cols, "T_par");
-        printf("D_par\n");
         print_matrix_to_file_double(D_par, m, n, "D_par");
 
         compare_matrices_double(D_seq, D_par, m, n);
