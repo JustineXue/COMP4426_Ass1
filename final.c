@@ -238,7 +238,28 @@ void* multiply_block_float_par(void* arg) {
     ThreadDataFloat* data = (ThreadDataFloat*)arg;
     for (int i = data->start_row; i < data->end_row; i++) {
         for (int j = data->start_col; j < data->end_col; j+=4) {
-            for (int k = 0; k < data->common_dim; k++){
+            for (int k = 0; k < data->common_dim_limit; k+=4){
+                data->M_3[i][j] += data->M_1[i][k] * data->M_2[k][j];
+                data->M_3[i][j+1] += data->M_1[i][k] * data->M_2[k][j+1];
+                data->M_3[i][j+2] += data->M_1[i][k] * data->M_2[k][j+2];
+                data->M_3[i][j+3] += data->M_1[i][k] * data->M_2[k][j+3];
+
+                data->M_3[i][j] += data->M_1[i][k+1] * data->M_2[k+1][j];
+                data->M_3[i][j+1] += data->M_1[i][k+1] * data->M_2[k+1][j+1];
+                data->M_3[i][j+2] += data->M_1[i][k+1] * data->M_2[k+1][j+2];
+                data->M_3[i][j+3] += data->M_1[i][k+1] * data->M_2[k+1][j+3];
+
+                data->M_3[i][j] += data->M_1[i][k+2] * data->M_2[k+2][j];
+                data->M_3[i][j+1] += data->M_1[i][k+2] * data->M_2[k+2][j+1];
+                data->M_3[i][j+2] += data->M_1[i][k+2] * data->M_2[k+2][j+2];
+                data->M_3[i][j+3] += data->M_1[i][k+2] * data->M_2[k+2][j+3];
+
+                data->M_3[i][j] += data->M_1[i][k+3] * data->M_2[k+3][j];
+                data->M_3[i][j+1] += data->M_1[i][k+3] * data->M_2[k+3][j+1];
+                data->M_3[i][j+2] += data->M_1[i][k+3] * data->M_2[k+3][j+2];
+                data->M_3[i][j+3] += data->M_1[i][k+3] * data->M_2[k+3][j+3];
+            }
+            for (int k = data->common_dim_limit; k < data->common_dim; k++){
                 data->M_3[i][j] += data->M_1[i][k] * data->M_2[k][j];
                 data->M_3[i][j+1] += data->M_1[i][k] * data->M_2[k][j+1];
                 data->M_3[i][j+2] += data->M_1[i][k] * data->M_2[k][j+2];
@@ -282,12 +303,33 @@ void* multiply_block_double_par(void* arg) {
     ThreadDataDouble* data = (ThreadDataDouble*)arg;
     for (int i = data->start_row; i < data->end_row; i++) {
         for (int j = data->start_col; j < data->end_col; j+=4) {
-            for (int k = 0; k < data->common_dim; k++){
+            for (int k = 0; k < data->common_dim_limit; k+=4){
                 data->M_3[i][j] += data->M_1[i][k] * data->M_2[k][j];
                 data->M_3[i][j+1] += data->M_1[i][k] * data->M_2[k][j+1];
                 data->M_3[i][j+2] += data->M_1[i][k] * data->M_2[k][j+2];
                 data->M_3[i][j+3] += data->M_1[i][k] * data->M_2[k][j+3];
+
+                data->M_3[i][j] += data->M_1[i][k+1] * data->M_2[k+1][j];
+                data->M_3[i][j+1] += data->M_1[i][k+1] * data->M_2[k+1][j+1];
+                data->M_3[i][j+2] += data->M_1[i][k+1] * data->M_2[k+1][j+2];
+                data->M_3[i][j+3] += data->M_1[i][k+1] * data->M_2[k+1][j+3];
+
+                data->M_3[i][j] += data->M_1[i][k+2] * data->M_2[k+2][j];
+                data->M_3[i][j+1] += data->M_1[i][k+2] * data->M_2[k+2][j+1];
+                data->M_3[i][j+2] += data->M_1[i][k+2] * data->M_2[k+2][j+2];
+                data->M_3[i][j+3] += data->M_1[i][k+2] * data->M_2[k+2][j+3];
+
+                data->M_3[i][j] += data->M_1[i][k+3] * data->M_2[k+3][j];
+                data->M_3[i][j+1] += data->M_1[i][k+3] * data->M_2[k+3][j+1];
+                data->M_3[i][j+2] += data->M_1[i][k+3] * data->M_2[k+3][j+2];
+                data->M_3[i][j+3] += data->M_1[i][k+3] * data->M_2[k+3][j+3];
             }
+            for (int k = data->common_dim_limit; k < data->common_dim; k++){
+                data->M_3[i][j] += data->M_1[i][k] * data->M_2[k][j];
+                data->M_3[i][j+1] += data->M_1[i][k] * data->M_2[k][j+1];
+                data->M_3[i][j+2] += data->M_1[i][k] * data->M_2[k][j+2];
+                data->M_3[i][j+3] += data->M_1[i][k] * data->M_2[k][j+3];
+            }    
             // for (int k = 0; k < data->common_dim_limit; k+=4){
             //     sum0 += data->M_1[i][k] * data->M_2[k][j] +
             //             data->M_1[i][k+1] * data->M_2[k+1][j] +
