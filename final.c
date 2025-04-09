@@ -237,11 +237,13 @@ void multiply_matrix_float_seq(float **M_1, float **M_2, float **M_3, int rows, 
 void* multiply_block_float_par(void* arg) {
     ThreadDataFloat* data = (ThreadDataFloat*)arg;
     for (int i = data->start_row; i < data->end_row; i++) {
-        for (int j = data->start_col; j < data->end_col; j++) {
+        for (int j = data->start_col; j < data->end_col; j+=4) {
             for (int k = 0; k < data->common_dim; k++){
                 data->M_3[i][j] += data->M_1[i][k] * data->M_2[k][j];
+                data->M_3[i][j+1] += data->M_1[i][k] * data->M_2[k][j+1];
+                data->M_3[i][j+2] += data->M_1[i][k] * data->M_2[k][j+2];
+                data->M_3[i][j+3] += data->M_1[i][k] * data->M_2[k][j+3];
             }
-            // float sum0 = 0.0f, sum1 = 0.0f, sum2 = 0.0f, sum3 = 0.0f;
             // for (int k = 0; k < data->common_dim_limit; k+=4){
             //     sum0 += data->M_1[i][k] * data->M_2[k][j] +
             //             data->M_1[i][k+1] * data->M_2[k+1][j] +
@@ -271,11 +273,6 @@ void* multiply_block_float_par(void* arg) {
             //     sum2 += data->M_1[i][k] * data->M_2[k][j+2];
             //     sum3 += data->M_1[i][k] * data->M_2[k][j+3];
             // }
-
-            // data->M_3[i][j] = sum0;
-            // data->M_3[i][j+1] = sum1;
-            // data->M_3[i][j+2] = sum2;
-            // data->M_3[i][j+3] = sum3;
         }
     }
     return NULL;
@@ -284,11 +281,13 @@ void* multiply_block_float_par(void* arg) {
 void* multiply_block_double_par(void* arg) {
     ThreadDataDouble* data = (ThreadDataDouble*)arg;
     for (int i = data->start_row; i < data->end_row; i++) {
-        for (int j = data->start_col; j < data->end_col; j++) {
+        for (int j = data->start_col; j < data->end_col; j+=4) {
             for (int k = 0; k < data->common_dim; k++){
                 data->M_3[i][j] += data->M_1[i][k] * data->M_2[k][j];
+                data->M_3[i][j+1] += data->M_1[i][k] * data->M_2[k][j+1];
+                data->M_3[i][j+2] += data->M_1[i][k] * data->M_2[k][j+2];
+                data->M_3[i][j+3] += data->M_1[i][k] * data->M_2[k][j+3];
             }
-            // double sum0 = 0.0, sum1 = 0.0, sum2 = 0.0, sum3 = 0.0;
             // for (int k = 0; k < data->common_dim_limit; k+=4){
             //     sum0 += data->M_1[i][k] * data->M_2[k][j] +
             //             data->M_1[i][k+1] * data->M_2[k+1][j] +
@@ -673,13 +672,21 @@ int main(int argc, char *argv[]){
         printf("D_par\n");
         print_matrix_to_file_float(D_par, m, n, "D_par");
 
+        bool identical = true;
         float epsilon = 1.0E-7;
         for (int i = 0; i < m; i++){
             for (int j = 0; j < n; j++){
                 if (fabs(D_par[i][j] - D_seq[i][j]) > epsilon){
-                    printf("Errored on index [%d][%d]\n", i, j);
+                    printf("Mistmatch on index [%d][%d]\n", i, j);
+                    identical = false;
+                    break;
                 }
             }
+        }
+        if (identical){
+            printf("Outputs are identical\n");
+        } else {
+            printf("Outputs are not identical\n");
         }
 
         // printf("Comparing T\n");
@@ -767,19 +774,22 @@ int main(int argc, char *argv[]){
         printf("D_par\n");
         print_matrix_to_file_double(D_par, m, n, "D_par");
 
+        bool identical = true;
         double epsilon = 1.0E-10;
         for (int i = 0; i < m; i++){
             for (int j = 0; j < n; j++){
                 if (fabs(D_par[i][j] - D_seq[i][j]) > epsilon){
-                    printf("Errored on index [%d][%d]\n", i, j);
+                    printf("Mistmatch on index [%d][%d]\n", i, j);
+                    identical = false;
+                    break;
                 }
             }
         }
-        // printf("Comparing T\n");
-        // compare_files_double("T_seq", "T_par");
-        // printf("Comparing D\n");
-        // compare_files_double("D_seq", "D_par");
-
+        if (identical){
+            printf("Outputs are identical\n");
+        } else {
+            printf("Outputs are not identical\n");
+        }
         double speedup = elapsed_seq - elapsed_par;
         printf("Speedup: %.6f seconds\n", speedup);
 
