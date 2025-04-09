@@ -313,7 +313,7 @@ double ** setup_matrix_double(double **M, int rows, int cols, int array_type, in
             }
         }
     }
-    print_matrix_to_file_double(M, rows, cols, filename);
+    // print_matrix_to_file_double(M, rows, cols, filename);
         
     return M;
 }
@@ -341,7 +341,7 @@ float ** setup_matrix_float(float **M, int rows, int cols, int array_type, int i
         }
     }
 
-    print_matrix_to_file_float(M, rows, cols, filename);
+    // print_matrix_to_file_float(M, rows, cols, filename);
         
     return M;
 }
@@ -464,9 +464,9 @@ int main(int argc, char *argv[]){
         double elapsed_seq = seconds_seq + microseconds_seq * 1e-6;
         printf("Sequential Elapsed time: %.6f seconds\n", elapsed_seq);
 
-        printf("Printing sequential matrices to file\n");
-        print_matrix_to_file_float(T_seq, t_rows, t_cols, "T_seq");
-        print_matrix_to_file_float(D_seq, m, n, "D_seq");
+        // printf("Printing sequential matrices to file\n");
+        // print_matrix_to_file_float(T_seq, t_rows, t_cols, "T_seq");
+        // print_matrix_to_file_float(D_seq, m, n, "D_seq");
 
         printf("Executing parallel multiplication\n");
         struct timeval start_par, end_par;
@@ -484,9 +484,9 @@ int main(int argc, char *argv[]){
         double elapsed_par = seconds_par + microseconds_par * 1e-6;
         printf("Parallel Elapsed time: %.6f seconds\n", elapsed_par);
 
-        printf("Printing parallel matrices to file\n");
-        print_matrix_to_file_float(T_par, t_rows, t_cols, "T_par");
-        print_matrix_to_file_float(D_par, m, n, "D_par");
+        // printf("Printing parallel matrices to file\n");
+        // print_matrix_to_file_float(T_par, t_rows, t_cols, "T_par");
+        // print_matrix_to_file_float(D_par, m, n, "D_par");
 
         compare_matrices_float(D_seq, D_par, m, n);
 
@@ -547,9 +547,9 @@ int main(int argc, char *argv[]){
         double elapsed_seq = seconds_seq + microseconds_seq * 1e-6;
         printf("Sequential Elapsed time: %.6f seconds\n", elapsed_seq);
 
-        printf("Printing sequential matrices to file\n");
-        print_matrix_to_file_double(T_seq, t_rows, t_cols, "T_seq");
-        print_matrix_to_file_double(D_seq, m, n, "D_seq");
+        // printf("Printing sequential matrices to file\n");
+        // print_matrix_to_file_double(T_seq, t_rows, t_cols, "T_seq");
+        // print_matrix_to_file_double(D_seq, m, n, "D_seq");
 
         printf("Executing parallel multiplication\n");
         struct timeval start_par, end_par;
@@ -567,9 +567,9 @@ int main(int argc, char *argv[]){
         double elapsed_par = seconds_par + microseconds_par * 1e-6;
         printf("Parallel Elapsed time: %.6f seconds\n", elapsed_par);
 
-        printf("Printing parallel matrices to file\n");
-        print_matrix_to_file_double(T_par, t_rows, t_cols, "T_par");
-        print_matrix_to_file_double(D_par, m, n, "D_par");
+        // printf("Printing parallel matrices to file\n");
+        // print_matrix_to_file_double(T_par, t_rows, t_cols, "T_par");
+        // print_matrix_to_file_double(D_par, m, n, "D_par");
 
         compare_matrices_double(D_seq, D_par, m, n);
 
