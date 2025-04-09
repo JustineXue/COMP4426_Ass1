@@ -13,7 +13,7 @@
 #define DOUBLE 2
 #define ZERO 0
 #define RANDOM 3
-#define SID 520489042
+#define SID 9042
 #define A_TIMES_B 4
 #define B_TIMES_C 5
 #define L1_CACHE 65536
