@@ -1,56 +1,6 @@
-//main must generate random values based on SID
-//matrices must be determined by user input, (dimensions and type)
-//matrix multiplication must be manually verified as correct
-//wall time must be outputted
-//must intelligently determine if it is faster to multiply a*(b*c) or (a*b)*c with matrix T
-//a * b * c = d
+#include "header.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/time.h>
-#include <errno.h>
-#include <limits.h>
-#include <stdbool.h>
-#include <ctype.h>
-#include <string.h>
-#include <pthread.h>
-#include <math.h>
-
-#define FLOAT 1
-#define DOUBLE 2
-#define ZERO 0
-#define RANDOM 3
-#define SID 520489042
-#define A_TIMES_B 4
-#define B_TIMES_C 5
-#define L1_CACHE 65536
-
-typedef struct {
-    int thread_id;
-    int start_row;
-    int end_row;
-    int start_col;
-    int end_col;
-    int common_dim;
-    int common_dim_limit;
-    float **M_1;
-    float **M_2;
-    float **M_3;
-} ThreadDataFloat;
-
-typedef struct {
-    int thread_id;
-    int start_row;
-    int end_row;
-    int start_col;
-    int end_col;
-    int common_dim;
-    int common_dim_limit;
-    double **M_1;
-    double **M_2;
-    double **M_3;
-} ThreadDataDouble;
-
+//Compares final output matrices, of type double
 void compare_matrices_double(double **M_1, double **M_2, int rows, int cols){
     bool identical = true;
     double epsilon = 1.0E-10;
@@ -70,6 +20,7 @@ void compare_matrices_double(double **M_1, double **M_2, int rows, int cols){
     }
 }
 
+//Compares final output matrices, of type float
 void compare_matrices_float(float **M_1, float **M_2, int rows, int cols){
     bool identical = true;
     float epsilon = 1.0E-7;
@@ -89,62 +40,7 @@ void compare_matrices_float(float **M_1, float **M_2, int rows, int cols){
     }
 }
 
-void multiply_matrix_double_seq(double **M_1, double **M_2, double **M_3, int rows, int common_dim, int cols){
-    for (int i = 0; i < rows; i++){
-        for (int k = 0; k < common_dim; k++){
-            for (int j = 0; j < cols; j++){
-                M_3[i][j] += M_1[i][k] * M_2[k][j];
-            }
-        }
-    }
-}
-
-void multiply_matrix_float_seq(float **M_1, float **M_2, float **M_3, int rows, int common_dim, int cols){
-    for (int i = 0; i < rows; i++){
-        for (int k = 0; k < common_dim; k++){
-            for (int j = 0; j < cols; j++){
-                M_3[i][j] += M_1[i][k] * M_2[k][j];
-            }
-        }
-    }
-}
-
-void* multiply_block_float_par(void* arg) {
-    ThreadDataFloat* data = (ThreadDataFloat*)arg;
-    for (int i = data->start_row; i < data->end_row; i++) {
-        for (int j = data->start_col; j < data->end_col; j+=4) {
-            for (int k = 0; k < data->common_dim_limit; k+=4){
-                data->M_3[i][j] += data->M_1[i][k] * data->M_2[k][j];
-                data->M_3[i][j+1] += data->M_1[i][k] * data->M_2[k][j+1];
-                data->M_3[i][j+2] += data->M_1[i][k] * data->M_2[k][j+2];
-                data->M_3[i][j+3] += data->M_1[i][k] * data->M_2[k][j+3];
-
-                data->M_3[i][j] += data->M_1[i][k+1] * data->M_2[k+1][j];
-                data->M_3[i][j+1] += data->M_1[i][k+1] * data->M_2[k+1][j+1];
-                data->M_3[i][j+2] += data->M_1[i][k+1] * data->M_2[k+1][j+2];
-                data->M_3[i][j+3] += data->M_1[i][k+1] * data->M_2[k+1][j+3];
-
-                data->M_3[i][j] += data->M_1[i][k+2] * data->M_2[k+2][j];
-                data->M_3[i][j+1] += data->M_1[i][k+2] * data->M_2[k+2][j+1];
-                data->M_3[i][j+2] += data->M_1[i][k+2] * data->M_2[k+2][j+2];
-                data->M_3[i][j+3] += data->M_1[i][k+2] * data->M_2[k+2][j+3];
-
-                data->M_3[i][j] += data->M_1[i][k+3] * data->M_2[k+3][j];
-                data->M_3[i][j+1] += data->M_1[i][k+3] * data->M_2[k+3][j+1];
-                data->M_3[i][j+2] += data->M_1[i][k+3] * data->M_2[k+3][j+2];
-                data->M_3[i][j+3] += data->M_1[i][k+3] * data->M_2[k+3][j+3];
-            }
-            for (int k = data->common_dim_limit; k < data->common_dim; k++){
-                data->M_3[i][j] += data->M_1[i][k] * data->M_2[k][j];
-                data->M_3[i][j+1] += data->M_1[i][k] * data->M_2[k][j+1];
-                data->M_3[i][j+2] += data->M_1[i][k] * data->M_2[k][j+2];
-                data->M_3[i][j+3] += data->M_1[i][k] * data->M_2[k][j+3];
-            }
-        }
-    }
-    return NULL;
-}
-
+//Executes the multiplication of sub-matrices, of type double, in a 2D blocking algorithm, performed by a thread in parallel
 void* multiply_block_double_par(void* arg) {
     ThreadDataDouble* data = (ThreadDataDouble*)arg;
     for (int i = data->start_row; i < data->end_row; i++) {
@@ -181,7 +77,44 @@ void* multiply_block_double_par(void* arg) {
     return NULL;
 }
 
+//Executes the multiplication of sub-matrices, of type float, in a 2D blocking algorithm, performed by a thread in parallel
+void* multiply_block_float_par(void* arg) {
+    ThreadDataFloat* data = (ThreadDataFloat*)arg;
+    for (int i = data->start_row; i < data->end_row; i++) {
+        for (int j = data->start_col; j < data->end_col; j+=4) {
+            for (int k = 0; k < data->common_dim_limit; k+=4){
+                data->M_3[i][j] += data->M_1[i][k] * data->M_2[k][j];
+                data->M_3[i][j+1] += data->M_1[i][k] * data->M_2[k][j+1];
+                data->M_3[i][j+2] += data->M_1[i][k] * data->M_2[k][j+2];
+                data->M_3[i][j+3] += data->M_1[i][k] * data->M_2[k][j+3];
 
+                data->M_3[i][j] += data->M_1[i][k+1] * data->M_2[k+1][j];
+                data->M_3[i][j+1] += data->M_1[i][k+1] * data->M_2[k+1][j+1];
+                data->M_3[i][j+2] += data->M_1[i][k+1] * data->M_2[k+1][j+2];
+                data->M_3[i][j+3] += data->M_1[i][k+1] * data->M_2[k+1][j+3];
+
+                data->M_3[i][j] += data->M_1[i][k+2] * data->M_2[k+2][j];
+                data->M_3[i][j+1] += data->M_1[i][k+2] * data->M_2[k+2][j+1];
+                data->M_3[i][j+2] += data->M_1[i][k+2] * data->M_2[k+2][j+2];
+                data->M_3[i][j+3] += data->M_1[i][k+2] * data->M_2[k+2][j+3];
+
+                data->M_3[i][j] += data->M_1[i][k+3] * data->M_2[k+3][j];
+                data->M_3[i][j+1] += data->M_1[i][k+3] * data->M_2[k+3][j+1];
+                data->M_3[i][j+2] += data->M_1[i][k+3] * data->M_2[k+3][j+2];
+                data->M_3[i][j+3] += data->M_1[i][k+3] * data->M_2[k+3][j+3];
+            }
+            for (int k = data->common_dim_limit; k < data->common_dim; k++){
+                data->M_3[i][j] += data->M_1[i][k] * data->M_2[k][j];
+                data->M_3[i][j+1] += data->M_1[i][k] * data->M_2[k][j+1];
+                data->M_3[i][j+2] += data->M_1[i][k] * data->M_2[k][j+2];
+                data->M_3[i][j+3] += data->M_1[i][k] * data->M_2[k][j+3];
+            }
+        }
+    }
+    return NULL;
+}
+
+//Prints a matrix, of type double, to an output file for reference
 void print_matrix_to_file_double(double **M, int rows, int cols, const char *filename){
     FILE *file = fopen(filename, "w");
     if (file == NULL) {
@@ -197,6 +130,7 @@ void print_matrix_to_file_double(double **M, int rows, int cols, const char *fil
     fclose(file);
 }
 
+//Prints a matrix, of type float, to an output file for reference
 void print_matrix_to_file_float(float **M, int rows, int cols, const char *filename){
     FILE *file = fopen(filename, "w");
     if (file == NULL) {
@@ -212,6 +146,7 @@ void print_matrix_to_file_float(float **M, int rows, int cols, const char *filen
     fclose(file);
 }
 
+//Handles the multiplication of two matrices, of type double, in parallel. This oversees the 2D blocking orchestration and thread management
 void multiply_matrix_double_par(double **M_1, double **M_2, double **M_3, int rows, int common_dim, int cols, int num_threads, int block_size){
     pthread_t threads[num_threads];
     ThreadDataDouble thread_data[num_threads];
@@ -273,6 +208,7 @@ void multiply_matrix_double_par(double **M_1, double **M_2, double **M_3, int ro
     }
 }
 
+//Handles the multiplication of two matrices, of type float, in parallel. This oversees the 2D blocking orchestration and thread management
 void multiply_matrix_float_par(float **M_1, float **M_2, float **M_3, int rows, int common_dim, int cols, int num_threads, int block_size){
     pthread_t threads[num_threads];
     ThreadDataFloat thread_data[num_threads];
@@ -333,6 +269,29 @@ void multiply_matrix_float_par(float **M_1, float **M_2, float **M_3, int rows, 
     }
 }
 
+//Handles the multiplication of two matrices, of type double, in sequential order
+void multiply_matrix_double_seq(double **M_1, double **M_2, double **M_3, int rows, int common_dim, int cols){
+    for (int i = 0; i < rows; i++){
+        for (int k = 0; k < common_dim; k++){
+            for (int j = 0; j < cols; j++){
+                M_3[i][j] += M_1[i][k] * M_2[k][j];
+            }
+        }
+    }
+}
+
+//Handles the multiplication of two matrices, of type float, in sequential order
+void multiply_matrix_float_seq(float **M_1, float **M_2, float **M_3, int rows, int common_dim, int cols){
+    for (int i = 0; i < rows; i++){
+        for (int k = 0; k < common_dim; k++){
+            for (int j = 0; j < cols; j++){
+                M_3[i][j] += M_1[i][k] * M_2[k][j];
+            }
+        }
+    }
+}
+
+//Initialises a matrix, of type double, with either randomly generated values or 0
 double ** setup_matrix_double(double **M, int rows, int cols, int array_type, int input_type, const char *filename){
     M = (double **)malloc(rows * sizeof(double *));
 
@@ -359,6 +318,7 @@ double ** setup_matrix_double(double **M, int rows, int cols, int array_type, in
     return M;
 }
 
+//Initialises a matrix, of type float, with either randomly generated values or 0
 float ** setup_matrix_float(float **M, int rows, int cols, int array_type, int input_type, const char *filename){
     M = (float **)malloc(rows * sizeof(float *));
 
@@ -386,6 +346,7 @@ float ** setup_matrix_float(float **M, int rows, int cols, int array_type, int i
     return M;
 }
 
+//Confirms if the input provided is a valid non-zero integer
 bool is_valid_int(const char *buff) {
     char *end;
     bool is_valid_int = false;
