@@ -1,4 +1,48 @@
-#include "header.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/time.h>
+#include <errno.h>
+#include <limits.h>
+#include <stdbool.h>
+#include <ctype.h>
+#include <string.h>
+#include <pthread.h>
+#include <math.h>
+
+#define FLOAT 1
+#define DOUBLE 2
+#define ZERO 0
+#define RANDOM 3
+#define SID 520489042
+#define A_TIMES_B 4
+#define B_TIMES_C 5
+#define L1_CACHE 65536
+
+typedef struct {
+    int thread_id;
+    int start_row;
+    int end_row;
+    int start_col;
+    int end_col;
+    int common_dim;
+    int common_dim_limit;
+    float **M_1;
+    float **M_2;
+    float **M_3;
+} ThreadDataFloat;
+
+typedef struct {
+    int thread_id;
+    int start_row;
+    int end_row;
+    int start_col;
+    int end_col;
+    int common_dim;
+    int common_dim_limit;
+    double **M_1;
+    double **M_2;
+    double **M_3;
+} ThreadDataDouble;
 
 //Compares final output matrices, of type double
 void compare_matrices_double(double **M_1, double **M_2, int rows, int cols){
