@@ -451,9 +451,13 @@ int main(int argc, char *argv[]){
         if (atoi(argv[6]) > 64){
             (void) fprintf(stderr, "Exiting due to invalid command-line input\n");
             exit(EXIT_FAILURE);
-        } else {
+        }
+        else {
             num_threads = atoi(argv[6]); 
         }
+    } else {
+        (void) fprintf(stderr, "Exiting due to invalid command-line input\n");
+        exit(EXIT_FAILURE);
     }
 
     printf("Inputs have been validated. Commencing initialisation of matrices\n");
